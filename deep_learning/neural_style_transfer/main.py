@@ -34,56 +34,57 @@ def load_image(image_name):
     image = loader(image).unsqueeze(0)
     return image.to(device)
 
-device = torch.device('cuda' if torch.cuda.is_available else 'cpu')
-image_size = 356
+if __name__ == '__main__':
+    device = torch.device('cuda' if torch.cuda.is_available else 'cpu')
+    image_size = 356
 
-loader = transforms.Compose([
-    transforms.Resize((image_size, image_size)),
-    transforms.ToTensor(),
-])
+    loader = transforms.Compose([
+        transforms.Resize((image_size, image_size)),
+        transforms.ToTensor(),
+    ])
 
-original_img = load_image('annahathaway.png')
-style_img = load_image('style.jpg')
+    original_img = load_image('annahathaway.png')
+    style_img = load_image('style.jpg')
 
-model = VGG().to(device).eval()
-generated = original_img.clone().requires_grad_(True)
+    model = VGG().to(device).eval()
+    generated = original_img.clone().requires_grad_(True)
 
-# Hyperparameters
-total_steps = 6000
-learning_rate = 1e-3
-alpha = 1
-beta = 1e-2
-optimizer = optim.Adam([generated], lr=learning_rate)
+    # Hyperparameters
+    total_steps = 6000
+    learning_rate = 1e-3
+    alpha = 1
+    beta = 1e-2
+    optimizer = optim.Adam([generated], lr=learning_rate)
 
-for step in range(total_steps):
-    generated_features = model(generated)
-    original_img_features = model(original_img)
-    style_features = model(style_img)
+    for step in range(total_steps):
+        generated_features = model(generated)
+        original_img_features = model(original_img)
+        style_features = model(style_img)
 
-    style_loss = original_loss = 0
+        style_loss = original_loss = 0
 
-    for gen_feature, orig_feature, style_feature in zip(
-        generated_features, original_img_features, style_features
-    ):
-        batch_size, channel, height, width = gen_feature.shape
-        original_loss += torch.mean((gen_feature - orig_feature) ** 2)
+        for gen_feature, orig_feature, style_feature in zip(
+            generated_features, original_img_features, style_features
+        ):
+            batch_size, channel, height, width = gen_feature.shape
+            original_loss += torch.mean((gen_feature - orig_feature) ** 2)
 
-        # Cumpute Gram Matrix
-        G = gen_feature.view(channel, height * width).mm(
-            gen_feature.view(channel, height * width).t()
-        )
+            # Cumpute Gram Matrix
+            G = gen_feature.view(channel, height * width).mm(
+                gen_feature.view(channel, height * width).t()
+            )
 
-        A = style_feature.view(channel, height * width).mm(
-            style_feature.view(channel, height * width).t()
-        )
+            A = style_feature.view(channel, height * width).mm(
+                style_feature.view(channel, height * width).t()
+            )
 
-        style_loss += torch.mean((G - A) ** 2)
+            style_loss += torch.mean((G - A) ** 2)
 
-    total_loss = alpha * original_loss + beta * style_loss
-    optimizer.zero_grad()
-    total_loss.backward()
-    optimizer.step()
+        total_loss = alpha * original_loss + beta * style_loss
+        optimizer.zero_grad()
+        total_loss.backward()
+        optimizer.step()
 
-    if step % 200 == 0:
-        print(total_loss)
-        save_image(generated, "generated.png")
+        if step % 200 == 0:
+            print(total_loss)
+            save_image(generated, "generated.png")
