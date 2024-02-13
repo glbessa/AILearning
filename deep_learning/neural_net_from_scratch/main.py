@@ -189,5 +189,3 @@ if __name__ == '__main__':
     print(np.argmax(val_y[3], 0))
     plt.imshow(np.reshape(val_X[:,3, None], (28,28)))
     plt.show()
-
-    
