@@ -1,2 +1,4 @@
 datasets/*
 !datasets/*.md
+
+*.pdf

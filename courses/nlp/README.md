@@ -23,3 +23,4 @@
 #### LSTM
 
 - Salva informações processadas anteriormente para as camadas mais adiante. Serve como uma pequena memória.
+
