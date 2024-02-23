@@ -2,3 +2,7 @@ datasets/*
 !datasets/*.md
 
 *.pdf
+
+__pycache__
+
+*.zip

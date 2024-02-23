@@ -14,6 +14,7 @@ from torchvision.utils import save_image
 class VGG(nn.Module):
     def __init__(self):
         super().__init__()
+        self.config = {'state_dict': None }
 
         self.chosen_features = ['0', '5', '10', '19', '28']
         self.model = models.vgg19(weights=models.VGG19_Weights.DEFAULT).features[:29]
@@ -35,6 +36,11 @@ def load_image(image_name):
     return image.to(device)
 
 if __name__ == '__main__':
+    checkpoint = {
+        'model_state':None,
+        'optim_state':None
+    }
+
     device = torch.device('cuda' if torch.cuda.is_available else 'cpu')
     image_size = 356
 
@@ -43,8 +49,8 @@ if __name__ == '__main__':
         transforms.ToTensor(),
     ])
 
-    original_img = load_image('annahathaway.png')
-    style_img = load_image('style.jpg')
+    original_img = load_image('gabriel.jpeg')
+    style_img = load_image('noite-estrelada-van-gogh.jpeg')
 
     model = VGG().to(device).eval()
     generated = original_img.clone().requires_grad_(True)
@@ -69,7 +75,7 @@ if __name__ == '__main__':
             batch_size, channel, height, width = gen_feature.shape
             original_loss += torch.mean((gen_feature - orig_feature) ** 2)
 
-            # Cumpute Gram Matrix
+            # Compute Gram Matrix
             G = gen_feature.view(channel, height * width).mm(
                 gen_feature.view(channel, height * width).t()
             )
@@ -85,6 +91,14 @@ if __name__ == '__main__':
         total_loss.backward()
         optimizer.step()
 
-        if step % 200 == 0:
+        if step % 500 == 0:
             print(total_loss)
             save_image(generated, "generated.png")
+            checkpoint['model_state'] = model.state_dict()
+            checkpoint['optim_state'] = optimizer.state_dict()
+            torch.save(checkpoint, "checkpoint.pth")
+
+    save_image(generated, "generated.png")
+    checkpoint['model_state'] = model.state_dict()
+    checkpoint['optim_state'] = optimizer.state_dict()
+    torch.save(checkpoint, "checkpoint.pth")
